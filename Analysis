@@ -1,0 +1,89 @@
+-- # IMDB Movie Analysis Project
+
+-- ## Step 1: Create the Database
+DROP DATABASE IF EXISTS imdbmovies;
+CREATE DATABASE imdbmovies;
+
+-- Connect to the database
+\c imdbmovies;
+
+-- ## Step 2: Create the Movies Table
+DROP TABLE IF EXISTS movies;
+CREATE TABLE movies (
+    imdbID INT PRIMARY KEY,
+    title TEXT,
+    year INT,
+    rating TEXT,
+    runtime TEXT,
+    genre TEXT,
+    released DATE,
+    director TEXT,
+    writer TEXT,
+    "cast" TEXT,
+    metacritic NUMERIC,
+    imdbRating NUMERIC,
+    imdbVotes INT,
+    poster TEXT,
+    plot TEXT,
+    fullplot TEXT,
+    language TEXT,
+    country TEXT,
+    awards TEXT,
+    lastupdated TEXT,
+    type TEXT
+);
+
+-- ## Step 3: Import the Data from CSV
+\copy movies FROM 'movies_initial.csv' WITH CSV HEADER DELIMITER ',';
+
+-- ## Step 4: Data Cleaning
+-- Convert runtime to an integer by removing ' min'
+UPDATE movies SET runtime = REGEXP_REPLACE(runtime, ' min', '', 'g')::INT;
+
+-- Handle NULL values by replacing with default values
+UPDATE movies SET metacritic = 0 WHERE metacritic IS NULL;
+UPDATE movies SET imdbRating = 0 WHERE imdbRating IS NULL;
+UPDATE movies SET imdbVotes = 0 WHERE imdbVotes IS NULL;
+
+-- ## Step 5: Data Analysis Queries
+-- 1. Find the Top 10 Highest-Rated Movies
+SELECT title, year, imdbRating FROM movies 
+ORDER BY imdbRating DESC LIMIT 10;
+
+-- 2. Find the Most Common Movie Genres
+SELECT genre, COUNT(*) AS genre_count FROM movies 
+GROUP BY genre ORDER BY genre_count DESC;
+
+-- 3. Find the Movies with the Most IMDb Votes
+SELECT title, imdbVotes FROM movies 
+ORDER BY imdbVotes DESC LIMIT 10;
+
+-- 4. Average IMDb Rating per Year
+SELECT year, ROUND(AVG(imdbRating), 2) AS avg_rating FROM movies 
+GROUP BY year ORDER BY year DESC;
+
+-- 5. Directors with the Most Highly Rated Movies (IMDb Rating > 8.5)
+SELECT director, COUNT(*) AS movie_count FROM movies 
+WHERE imdbRating > 8.5 GROUP BY director 
+ORDER BY movie_count DESC;
+
+-- 6. Average IMDb Rating by Genre
+SELECT genre, ROUND(AVG(imdbRating), 2) AS avg_rating FROM movies 
+GROUP BY genre ORDER BY avg_rating DESC;
+
+-- 7. Relationship Between IMDb Votes and Ratings
+SELECT imdbRating, AVG(imdbVotes) AS avg_votes FROM movies 
+GROUP BY imdbRating ORDER BY imdbRating DESC;
+
+-- 8. Find Movies That Won Awards
+SELECT title, awards FROM movies 
+WHERE awards IS NOT NULL AND awards <> '';
+
+-- 9. Find the Longest Movies in the Dataset
+SELECT title, runtime FROM movies 
+ORDER BY runtime DESC LIMIT 10;
+
+-- 10. Compare IMDb Rating and Metacritic Score
+SELECT title, imdbRating, metacritic FROM movies 
+WHERE metacritic > 0 
+ORDER BY imdbRating DESC;
